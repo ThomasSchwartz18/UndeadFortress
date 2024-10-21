@@ -73,7 +73,8 @@ class Game:
         # Game steps
         self.intro_step = IntroStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         self.family_selection_step = FamilySelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
-        self.team_selection_step = TeamSelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+        # Pass the stat window reference when initializing TeamSelectionStep
+        self.team_selection_step = TeamSelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.stat_window)
 
         # Game state variables
         self.bullets = []
@@ -185,6 +186,8 @@ class Game:
         # Check if the player has selected two team members and clicked "Continue"
         if self.team_selection_step.handle_events(event) == "game_start":
             print("Transitioning to the Game")  # Debugging line
+            # Apply team boosts here before starting the game
+            self.team_selection_step.apply_team_boosts(self.team_selection_step.selected_roles)
             self.start_game()  # Transition to the game step
 
     def handle_in_game_actions(self, event):
@@ -369,7 +372,6 @@ class Game:
 
     # -------- Rendering --------
     def render_game(self):
-        print(f"Current step: {self.current_step}")
         if self.current_step == "main_menu":
             print("Rendering Main Menu")
             self.main_menu.draw(self.screen)
