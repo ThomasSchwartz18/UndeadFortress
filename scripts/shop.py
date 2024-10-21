@@ -204,17 +204,28 @@ class Shop:
     def upgrade_stat(self, stat_name):
         """Upgrade the selected stat if the player has enough money."""
         stat_boost_amounts = {
-            'Speed': 0.25,
-            'Accuracy': 0.05,
-            'Health Regen Rate': 0.02,
-            'Building Regen Rate': 0.01
+            'Speed': 0.25,               # Character speed boost
+            'Accuracy': 0.05,            # Character accuracy boost
+            'Health Regen Rate': 0.02,   # Character health regen boost
+            'Building Regen Rate': 0.01  # House health regen boost
         }
+
         price = self.upgrade_prices[stat_name]
+
         if self.money_counter.money >= price:
+            # Deduct money for the upgrade
             self.money_counter.money -= price
             boost_amount = stat_boost_amounts.get(stat_name, 0.1)
-            self.stat_window.apply_stat_boost(stat_name, boost_amount)
+
+            # Apply the boost to the corresponding stat
+            if stat_name == 'Building Regen Rate':
+                self.house.building_regen_rate += boost_amount  # Increase house regen rate
+            else:
+                self.stat_window.apply_stat_boost(stat_name, boost_amount)  # Apply character upgrades
+
             print(f"{stat_name} upgraded by {boost_amount}! Money left: {self.money_counter.money}")
+            
+            # Increase the upgrade price for the next time
             self.upgrade_prices[stat_name] = int(price * 1.2)
             print(f"New price for {stat_name} upgrade: {self.upgrade_prices[stat_name]}")
         else:

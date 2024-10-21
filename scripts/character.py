@@ -87,8 +87,8 @@ class Character:
 
     def regenerate_health(self, delta_time):
         """Regenerate health over time if the health_regen_rate is greater than 0."""
-        if self.current_health < self.max_health:
-            self.current_health += self.health_regen_rate * delta_time
+        if self.health_regen_rate > 0 and self.current_health < self.max_health:
+            self.current_health += self.health_regen_rate * delta_time  # Regenerate health based on delta_time
             if self.current_health > self.max_health:
                 self.current_health = self.max_health
 

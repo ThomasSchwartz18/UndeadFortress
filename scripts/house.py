@@ -7,6 +7,7 @@ class House:
         self.base_size = 200
         self.health = 100  # Current health of the house
         self.max_health = 100  # Maximum health
+        self.building_regen_rate = 0  # Initialize building regen rate to 0
 
         # Load the house image
         try:
@@ -49,6 +50,13 @@ class House:
                 if self.health > self.max_health:
                     self.health = self.max_health
             self.last_health_regen_time = current_time
+
+    def regenerate_health(self, delta_time):
+        """Regenerate house health over time based on the building regen rate."""
+        if self.building_regen_rate > 0 and self.health < self.max_health:
+            self.health += self.building_regen_rate * delta_time  # Regenerate health based on delta_time
+            if self.health > self.max_health:
+                self.health = self.max_health
 
     def draw(self, surface, zoom_level, screen_width, screen_height):
         """Draw the house or rubble on the given surface."""
