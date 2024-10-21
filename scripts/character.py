@@ -26,10 +26,14 @@ class Character:
         self.damage_bonus = 0  # Damage bonus for machine gunners
         self.health_regen_rate = 0  # Health regeneration rate for medics
         self.accuracy_offset = accuracy  # Lower value = more accurate, higher value = less accurate
+        self.fire_rate_bonus = 0.0  # Fire rate bonus for machine gunners
+
+        # Base shooting interval for bullets per second
+        self.shooting_interval = 1 / 3  # 3 bullets per second
+        self.last_auto_shot_time = time.time()  # For automatic shooting
 
         # Track time for medic healing and automatic shooting
         self.last_health_regen_time = time.time()
-        self.last_auto_shot_time = time.time()
 
     # Method to dynamically update the character's stats when upgraded
     def update_stat(self, stat_name, new_value):
@@ -38,11 +42,14 @@ class Character:
             self.speed = new_value  # Dynamically update speed
             print(f"Speed updated to {self.speed}")
         elif stat_name == "Accuracy":
-            self.accuracy_bonus = new_value  # Dynamically update accuracy
-            print(f"Accuracy updated to {self.accuracy_bonus}")
+            self.accuracy_bonus += new_value  # Dynamically update accuracy
+            print(f"Accuracy updated by {new_value}, total bonus: {self.accuracy_bonus}")
         elif stat_name == "Health Regen Rate":
             self.health_regen_rate = new_value  # Dynamically update health regen rate
             print(f"Health Regen Rate updated to {self.health_regen_rate}")
+        elif stat_name == "Fire Rate":
+            self.fire_rate_bonus += new_value  # Update fire rate bonus
+            print(f"Fire Rate updated by {new_value}, total bonus: {self.fire_rate_bonus}")
 
     def handle_movement(self, keys_pressed):
         # Retrieve the total speed (base + boost) from player stats if available
@@ -159,7 +166,9 @@ class Character:
     def auto_shoot(self, mouse_x, mouse_y):
         """For Machine Gunner: Automatically shoot at a regular interval."""
         current_time = time.time()
-        if current_time - self.last_auto_shot_time >= 0.1:  # Shoot every 100ms
+        # Adjust the shooting interval based on the fire_rate_bonus
+        adjusted_interval = max(0.05, self.shooting_interval - self.fire_rate_bonus)  # Ensure minimum interval of 0.05s
+        if current_time - self.last_auto_shot_time >= adjusted_interval:
             self.last_auto_shot_time = current_time
             return self.shoot(mouse_x, mouse_y)
         return None

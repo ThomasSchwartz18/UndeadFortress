@@ -89,6 +89,13 @@ class FamilySelectionStep:
 
 # Step 3: Team Selection Step
 class TeamSelectionStep:
+    TEAM_BOOSTS = {
+        "Sniper": {"Accuracy": 5},  # Sniper boosts Accuracy by +5
+        "Machine Gunner": {"Damage": 10, "Fire Rate": -0.05},  # Machine Gunner improves fire rate (lower interval)
+        "Medic": {"Health Regen Rate": 0.1},  # Medic increases health regeneration rate
+        "Engineer": {"Building Regen Rate": 0.05}  # Engineer increases building regeneration rate
+    }
+
     def __init__(self, screen_width, screen_height, stat_window):
         self.font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 25)
         self.button_font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 25)
@@ -169,7 +176,7 @@ class TeamSelectionStep:
     def apply_team_boosts(self, selected_team):
         """Apply the stat boosts based on the selected team members."""
         for member in selected_team:
-            boosts = TEAM_BOOSTS.get(member, {})
+            boosts = self.TEAM_BOOSTS.get(member, {})
             for stat, boost_value in boosts.items():
                 self.stat_window.apply_stat_boost(stat, boost_value)
                 print(f"Boost applied for {member}: {stat} increased by {boost_value}")
