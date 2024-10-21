@@ -1,5 +1,5 @@
 # startup_selections.py
-
+from scripts.team_boosts import TEAM_BOOSTS  # Import the boost dictionary
 import pygame
 
 # Step 1: Intro Step
@@ -89,7 +89,7 @@ class FamilySelectionStep:
 
 # Step 3: Team Selection Step
 class TeamSelectionStep:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, stat_window):
         self.font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 25)
         self.button_font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 25)
 
@@ -97,6 +97,9 @@ class TeamSelectionStep:
         self.roles = ["Sniper", "Machine Gunner", "Medic", "Engineer"]
         self.role_buttons = []
         self.selected_roles = []
+
+        # Reference to the stat window (for applying boosts)
+        self.stat_window = stat_window  # The stat window to apply stat boosts
 
         # Create role buttons
         for index, role in enumerate(self.roles):
@@ -157,7 +160,16 @@ class TeamSelectionStep:
 
             # Check if the user clicked the continue button
             if self.show_continue_button and self.continue_rect.collidepoint(mouse_pos):
-                print("Continue button clicked, starting the game.")  # Debugging line
+                print("Continue button clicked, applying boosts.")  # Debugging line
+                self.apply_team_boosts(self.selected_roles)  # Apply boosts
                 return "game_start"
 
         return None
+
+    def apply_team_boosts(self, selected_team):
+        """Apply the stat boosts based on the selected team members."""
+        for member in selected_team:
+            boosts = TEAM_BOOSTS.get(member, {})
+            for stat, boost_value in boosts.items():
+                self.stat_window.apply_stat_boost(stat, boost_value)
+                print(f"Boost applied for {member}: {stat} increased by {boost_value}")

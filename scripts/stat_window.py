@@ -17,12 +17,13 @@ class StatWindow:
     def set_visibility(self, visible):
         self.show_window = visible
 
-    def apply_stat_boost(self, stat_name, boost_amount):
+    def apply_stat_boost(self, stat_name, boost_value):
         """Apply a boost to the given stat."""
-        base_value, boost_value, total_value = self.player_stats[stat_name]
-        boost_value += boost_amount
-        total_value = base_value + boost_value
-        self.player_stats[stat_name] = (base_value, boost_value, total_value)
+        if stat_name in self.player_stats:
+            base_value, boost, total = self.player_stats[stat_name]
+            new_boost = boost + boost_value
+            self.player_stats[stat_name] = (base_value, new_boost, base_value + new_boost)
+            print(f"Applied {boost_value} boost to {stat_name}. New value: {self.player_stats[stat_name]}")
 
     def draw(self):
         if self.show_window:
