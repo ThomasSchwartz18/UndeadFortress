@@ -3,7 +3,7 @@ import random
 import time
 
 class Character:
-    def __init__(self, start_x, start_y, width=20, height=40, speed=1.2, health=100, accuracy=10, player_stats=None):
+    def __init__(self, start_x, start_y, width=20, height=40, speed=1.2, health=100, accuracy=10, player_stats=None, selected_roles=None):
         self.x = start_x  # Player's x position
         self.y = start_y  # Player's y position
         self.base_width = width  # Store base width for scaling
@@ -17,24 +17,28 @@ class Character:
         self.in_house = True  # Start the player inside the house and invisible
         self.is_visible = False  # Player is invisible when inside the house
         self.shooting_automatic = False  # For machine gunner ability (automatic shooting)
-        self.fire_rate = 3  # Example fire rate (shots per second)
+        self.fire_rate = player_stats.get('Rate of Fire', (3.0, 0.0, 3.0))[2]  # Set fire rate based on player stats
         self.damage_bonus = 25  # Example damage per shot
 
         # Reference to player stats for real-time upgrades (optional)
         self.player_stats = player_stats or {}
 
-        # Abilities attributes (initial state with no bonuses)
-        self.accuracy_bonus = 0.0  # Accuracy bonus for snipers
-        self.health_regen_rate = 0  # Health regeneration rate for medics
-        self.accuracy_offset = accuracy  # Lower value = more accurate, higher value = less accurate
-        self.fire_rate_bonus = 0.0  # Fire rate bonus for machine gunners
+        # Check if Machine Gunner is in the selected roles and apply fire rate bonus
+        self.fire_rate_bonus = 1.0 if selected_roles and "Machine Gunner" in selected_roles else 0.0
 
-        # Base shooting interval for bullets per second
-        self.shooting_interval = 1 / 3  # 3 bullets per second
+        # Apply fire rate bonus and recalculate shooting interval
+        self.shooting_interval = 1 / (self.fire_rate + self.fire_rate_bonus)
         self.last_auto_shot_time = time.time()  # For automatic shooting
 
         # Track time for medic healing and automatic shooting
         self.last_health_regen_time = time.time()
+
+        # Abilities attributes (initial state with no bonuses)
+        self.accuracy_bonus = 0.0  # Accuracy bonus for snipers
+        self.health_regen_rate = 0  # Health regeneration rate for medics
+        self.accuracy_offset = accuracy  # Lower value = more accurate, higher value = less accurate
+
+        print(f"Character initialized with fire rate: {self.fire_rate}, fire rate bonus: {self.fire_rate_bonus}, shooting interval: {self.shooting_interval}")
 
     def update_stat(self, stat_name, new_value):
         """Update the character's stat dynamically."""
@@ -49,10 +53,12 @@ class Character:
             print(f"Health Regen Rate updated to {self.health_regen_rate}")
         elif stat_name == "Fire Rate":
             self.fire_rate_bonus += new_value
-            print(f"Fire Rate updated by {new_value}, total bonus: {self.fire_rate_bonus}")
+            self.shooting_interval = 1 / (self.fire_rate + self.fire_rate_bonus)  # Recalculate shooting interval
+            print(f"Fire Rate updated: base {self.fire_rate}, bonus applied: {self.fire_rate_bonus}, new interval: {self.shooting_interval}")
         elif stat_name == "Damage":
             self.damage_bonus += new_value  # Update the damage bonus
             print(f"Damage updated by {new_value}, total bonus: {self.damage_bonus}")
+
 
 
     def handle_movement(self, keys_pressed):
@@ -167,11 +173,29 @@ class Character:
         # Return the shooting coordinates, ensuring `self.base_width` is valid
         return self.x + self.base_width // 2, self.y + self.base_height // 2, adjusted_mouse_x, adjusted_mouse_y
 
-    def auto_shoot(self, mouse_x, mouse_y):
-        """Automatically shoot at a regular interval."""
-        current_time = time.time()
-        adjusted_interval = max(0.05, self.shooting_interval - self.fire_rate_bonus)  # Ensure minimum interval of 0.05s
-        if current_time - self.last_auto_shot_time >= adjusted_interval:
-            self.last_auto_shot_time = current_time
-            return self.shoot(mouse_x, mouse_y)
-        return None
+def auto_shoot(self):
+    """Automatically shoot bullets if Mouse1 is held down at the correct rate."""
+    current_time = pygame.time.get_ticks() / 1000.0  # Current time in seconds
+    mouse_buttons = pygame.mouse.get_pressed()
+
+    # If Mouse1 (left-click) is held down, shoot bullets automatically
+    if mouse_buttons[0]:
+        self.is_shooting = True
+    else:
+        self.is_shooting = False
+
+    if self.is_shooting and current_time - self.last_shot_time >= self.character.shooting_interval:
+        print(f"Shooting with interval: {self.character.shooting_interval}")  # Debugging line to check interval
+        self.shoot_bullet()  # Shoot a bullet
+        
+        # If Machine Gunner is selected, reduce the time to simulate faster shooting
+        if "Machine Gunner" in self.team_selection_step.selected_roles:
+            # Subtract a small amount of time to speed up shooting (e.g., 0.1 seconds)
+            reduced_time = 0.1
+            self.last_shot_time = current_time - reduced_time
+            print(f"Machine Gunner active, reducing shot time by {reduced_time} seconds")
+        else:
+            # Otherwise, just set the last shot time to current time
+            self.last_shot_time = current_time
+
+

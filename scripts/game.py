@@ -29,7 +29,7 @@ class Game:
         self.SCREEN_WIDTH, self.SCREEN_HEIGHT = pygame.display.get_surface().get_size()
         pygame.display.set_caption("Fortress of the Undead")
         self.clock = pygame.time.Clock()
-        
+
         # Load the PixelifySans font
         self.font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 36)  # Default size 36
 
@@ -44,7 +44,7 @@ class Game:
         self.money_counter = MoneyCounter()
         self.materials_counter = MaterialsCounter()
 
-       # Create the stat window for displaying player stats
+        # Create the stat window for displaying player stats
         self.player_stats = {
             'Speed': (1.2, 0.0, 1.2),  # Base, Boost, Total
             'Health': (100, 0.0, 100),
@@ -54,11 +54,17 @@ class Game:
             'Building Regen Rate': (0, 0.0, 0)
         }
 
-        # Pass the correct player stats reference to the Character class
-        self.character = Character(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 2, player_stats=self.player_stats)
-        
+        # Initialize the stat window before the shop
+        self.stat_window = StatWindow(self.screen, self.player_stats)
+
+        # Other game element initialization...
+        self.team_selection_step = TeamSelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.stat_window)
+
+        # Placeholder for character initialization, it will be initialized after team selection
+        self.character = None
+
         self.player_speed = 0.0  # Initialize player speed
-        self.previous_position = (self.character.x, self.character.y)  # Track the previous position of the player
+        self.previous_position = (0, 0)  # Track the previous position of the player
         self.speed_history = []  # List to store recent speed values
         self.speed_history_size = 10  # Number of frames to average over
         self.damage_done_in_last_second = 0  # Track total damage done per second
@@ -70,18 +76,14 @@ class Game:
         self.shots_in_last_interval = 0  # Track how many shots fired in the last 0.5 seconds
         self.sps = 0  # Shots per second
 
-        # Initialize the stat window before the shop
-        self.stat_window = StatWindow(self.screen, self.player_stats)
-
         # Initialize the shop after creating the stat window
         self.shop = Shop(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.house, self.materials_counter, self.stat_window, self.money_counter)
-        
+
         self.main_menu = MainMenu(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
         # Game steps
         self.intro_step = IntroStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
         self.family_selection_step = FamilySelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
-        # Pass the stat window reference when initializing TeamSelectionStep
         self.team_selection_step = TeamSelectionStep(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.stat_window)
 
         # Game state variables
@@ -99,7 +101,23 @@ class Game:
         self.last_shot_time = 0  # Track the time of the last shot
         self.is_shooting = False  # Track if the player is holding Mouse1 (left-click)
 
+    def start_game_after_team_selection(self):
+        """Initialize the game with the selected roles."""
+        selected_roles = self.team_selection_step.selected_roles  # Get the selected roles
+        print(f"Selected roles: {selected_roles}")  # Debugging line to ensure roles are selected
 
+        # Pass selected roles to the Character class
+        self.character = Character(
+            self.SCREEN_WIDTH // 2,
+            self.SCREEN_HEIGHT // 2,
+            player_stats=self.player_stats,
+            selected_roles=selected_roles  # Pass selected roles to the character
+        )
+
+        self.spawn_zombies(5)
+        self.day_counter.current_day = 1
+        self.current_step = "game"
+    
     def apply_stat_boost(self, stat_name, boost_value):
         """Apply a boost to the given stat and update its total."""
         if stat_name in self.player_stats:
@@ -190,12 +208,11 @@ class Game:
             self.current_step = "team_selection"
 
     def handle_team_selection_events(self, event):
-        # Check if the player has selected two team members and clicked "Continue"
+        """Handle the transition from team selection to game start."""
         if self.team_selection_step.handle_events(event) == "game_start":
-            print("Transitioning to the Game")  # Debugging line
-            # Apply team boosts here before starting the game
-            self.team_selection_step.apply_team_boosts(self.team_selection_step.selected_roles)
-            self.start_game()  # Transition to the game step
+            print("Transitioning to the Game")
+            self.team_selection_step.apply_team_boosts(self.team_selection_step.selected_roles)  # Apply boosts
+            self.start_game_after_team_selection()  # Initialize the character with selected roles
 
     def handle_in_game_actions(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -372,7 +389,7 @@ class Game:
                 self.drops.remove(drop)
                 
     def auto_shoot(self):
-        """Automatically shoot bullets if Mouse1 is held down at 3 bullets per second."""
+        """Automatically shoot bullets if Mouse1 is held down, with an interval adjusted by selected roles."""
         current_time = pygame.time.get_ticks() / 1000.0  # Current time in seconds
         mouse_buttons = pygame.mouse.get_pressed()
 
@@ -382,9 +399,19 @@ class Game:
         else:
             self.is_shooting = False
 
-        if self.is_shooting and current_time - self.last_shot_time >= self.shooting_interval:
+        # Calculate the shooting interval based on the character's fire rate and bonus
+        shooting_interval = self.character.shooting_interval
+
+        if self.is_shooting and current_time - self.last_shot_time >= shooting_interval:
             self.shoot_bullet()  # Shoot a bullet
+            
+            # Check if Machine Gunner is selected and apply a faster shooting interval
+            if "Machine Gunner" in self.team_selection_step.selected_roles:
+                print("Machine Gunner active, reducing shooting interval")  # Debugging
+                shooting_interval = max(0.1, shooting_interval - 0.1)  # Reduce interval, e.g., by 0.1 seconds
+            
             self.last_shot_time = current_time  # Update the last shot time
+
 
     # -------- Handle Day Progression --------
     def check_day_progression(self, event):
