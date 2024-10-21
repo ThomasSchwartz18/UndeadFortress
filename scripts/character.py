@@ -17,13 +17,14 @@ class Character:
         self.in_house = True  # Start the player inside the house and invisible
         self.is_visible = False  # Player is invisible when inside the house
         self.shooting_automatic = False  # For machine gunner ability (automatic shooting)
+        self.fire_rate = 3  # Example fire rate (shots per second)
+        self.damage_bonus = 25  # Example damage per shot
 
         # Reference to player stats for real-time upgrades (optional)
         self.player_stats = player_stats or {}
 
         # Abilities attributes (initial state with no bonuses)
         self.accuracy_bonus = 0.0  # Accuracy bonus for snipers
-        self.damage_bonus = 0  # Damage bonus for machine gunners
         self.health_regen_rate = 0  # Health regeneration rate for medics
         self.accuracy_offset = accuracy  # Lower value = more accurate, higher value = less accurate
         self.fire_rate_bonus = 0.0  # Fire rate bonus for machine gunners
@@ -35,21 +36,24 @@ class Character:
         # Track time for medic healing and automatic shooting
         self.last_health_regen_time = time.time()
 
-    # Method to dynamically update the character's stats when upgraded
     def update_stat(self, stat_name, new_value):
         """Update the character's stat dynamically."""
         if stat_name == "Speed":
-            self.speed = new_value  # Dynamically update speed
+            self.speed = new_value
             print(f"Speed updated to {self.speed}")
         elif stat_name == "Accuracy":
-            self.accuracy_bonus += new_value  # Dynamically update accuracy
+            self.accuracy_bonus += new_value
             print(f"Accuracy updated by {new_value}, total bonus: {self.accuracy_bonus}")
         elif stat_name == "Health Regen Rate":
-            self.health_regen_rate = new_value  # Dynamically update health regen rate
+            self.health_regen_rate = new_value
             print(f"Health Regen Rate updated to {self.health_regen_rate}")
         elif stat_name == "Fire Rate":
-            self.fire_rate_bonus += new_value  # Update fire rate bonus
+            self.fire_rate_bonus += new_value
             print(f"Fire Rate updated by {new_value}, total bonus: {self.fire_rate_bonus}")
+        elif stat_name == "Damage":
+            self.damage_bonus += new_value  # Update the damage bonus
+            print(f"Damage updated by {new_value}, total bonus: {self.damage_bonus}")
+
 
     def handle_movement(self, keys_pressed):
         # Retrieve the total speed (base + boost) from player stats if available
@@ -164,9 +168,8 @@ class Character:
         return self.x + self.base_width // 2, self.y + self.base_height // 2, adjusted_mouse_x, adjusted_mouse_y
 
     def auto_shoot(self, mouse_x, mouse_y):
-        """For Machine Gunner: Automatically shoot at a regular interval."""
+        """Automatically shoot at a regular interval."""
         current_time = time.time()
-        # Adjust the shooting interval based on the fire_rate_bonus
         adjusted_interval = max(0.05, self.shooting_interval - self.fire_rate_bonus)  # Ensure minimum interval of 0.05s
         if current_time - self.last_auto_shot_time >= adjusted_interval:
             self.last_auto_shot_time = current_time

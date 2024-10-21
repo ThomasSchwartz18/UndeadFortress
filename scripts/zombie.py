@@ -78,8 +78,9 @@ class Zombie:
         return False  # No damage to the house
 
     def take_damage(self, damage):
-        """Reduce the zombie's health by the given damage."""
         self.current_health -= damage
+        print(f"Zombie took {damage} damage. Health is now {self.current_health}")  # Debugging line
+
         if self.current_health < 0:
             self.current_health = 0
 
@@ -93,13 +94,25 @@ class Zombie:
         bullet_width = bullet.bullet_image.get_width() * bullet.zoom_level
         bullet_height = bullet.bullet_image.get_height() * bullet.zoom_level
 
-        # Create a rectangle for the bullet based on its current position and size
-        bullet_rect = pygame.Rect(bullet.x, bullet.y, bullet_width, bullet_height)
+        # Center the bullet based on its current position and size
+        bullet_rect = pygame.Rect(
+            bullet.x - bullet_width // 2, bullet.y - bullet_height // 2, bullet_width, bullet_height
+        )
 
         # Create a rectangle for the zombie
         zombie_rect = pygame.Rect(self.x, self.y, self.base_width, self.base_height)
 
-        return zombie_rect.colliderect(bullet_rect)
+        # Debugging: Print out rectangles to see if they overlap
+        print(f"Bullet rect: {bullet_rect}, Zombie rect: {zombie_rect}")
+
+        # Check for collision
+        collision = zombie_rect.colliderect(bullet_rect)
+
+        if collision:
+            print("Collision detected!")  # Debugging line to confirm collision
+
+        return collision
+
     
     def draw(self, surface, zoom_level):
         """Draw the zombie and its health bar on the given surface."""

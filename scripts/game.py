@@ -61,6 +61,14 @@ class Game:
         self.previous_position = (self.character.x, self.character.y)  # Track the previous position of the player
         self.speed_history = []  # List to store recent speed values
         self.speed_history_size = 10  # Number of frames to average over
+        self.damage_done_in_last_second = 0  # Track total damage done per second
+        self.dps_timer = pygame.time.get_ticks() / 1000.0  # Start timer for DPS calculation
+
+        self.shots_fired = 0
+        self.sps_timer = pygame.time.get_ticks() / 1000.0  # Timer for SPS calculation
+
+        self.shots_in_last_interval = 0  # Track how many shots fired in the last 0.5 seconds
+        self.sps = 0  # Shots per second
 
         # Initialize the stat window before the shop
         self.stat_window = StatWindow(self.screen, self.player_stats)
@@ -120,7 +128,6 @@ class Game:
     # -------- Event Handling --------
     def handle_events(self):
         for event in pygame.event.get():
-            print(f"Event detected: {event}")  # Debugging line
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -164,7 +171,7 @@ class Game:
                 self.handle_game_events(event)
 
     def handle_main_menu_events(self, event):
-        print("Handling Main Menu events")
+        # print("Handling Main Menu events")
         self.main_menu.handle_events(event)  # This should process menu events
         if self.main_menu.is_game_started():
             print("Transitioning to Intro")
@@ -237,15 +244,17 @@ class Game:
             bullet_info = self.character.shoot(mouse_x, mouse_y)
             bullet = Bullet(*bullet_info, self.zoom_level)
             self.bullets.append(bullet)
+            self.shots_fired += 1  # Track number of shots fired
             print(f"Bullet shot at: ({mouse_x}, {mouse_y}) | Player inside the house")
-
+        
         # If the player is outside the house, check for ammo
         else:
-            if self.materials_counter.ammo > 0:  # Check if the player has ammo
+            if self.materials_counter.ammo > 0:
                 bullet_info = self.character.shoot(mouse_x, mouse_y)
                 bullet = Bullet(*bullet_info, self.zoom_level)
                 self.bullets.append(bullet)
-                self.materials_counter.ammo -= 1  # Decrease ammo by 1
+                self.materials_counter.ammo -= 1
+                self.shots_fired += 1  # Track number of shots fired
                 print(f"Bullet shot at: ({mouse_x}, {mouse_y}) | Ammo left: {self.materials_counter.ammo}")
             else:
                 print("No ammo left!")  # Notify that the player is out of ammo
@@ -263,6 +272,20 @@ class Game:
     def update_game(self):
         if self.current_step != "game":
             return
+        
+        # Calculate the current time and reset DPS every second
+        current_time = pygame.time.get_ticks() / 1000.0  # Time in seconds
+        # Reset SPS every second
+        if current_time - self.sps_timer >= 1.0:
+            self.sps = self.shots_fired  # Store the number of bullets fired in 1 second
+            self.shots_fired = 0  # Reset the shot count for the next second
+            self.sps_timer = current_time
+        
+        if current_time - self.dps_timer >= 0.25:
+            # Calculate the DPS as total damage done in the last second
+            self.dps = self.damage_done_in_last_second
+            self.damage_done_in_last_second = 0  # Reset the damage tracker
+            self.dps_timer = current_time  # Reset the DPS timer
 
         # Calculate player speed based on position change
         current_position = (self.character.x, self.character.y)
@@ -274,6 +297,9 @@ class Game:
             current_speed = 0.0
             
         delta_time = self.clock.get_time() / 1000  # Convert milliseconds to seconds
+
+        # Pass the calculated DPS to materials_counter.draw
+        self.materials_counter.draw(self.screen, 20, 100, self.player_speed, self.character.fire_rate, self.character.damage_bonus, self.dps, self.sps)
 
         # Update speed history with the current speed
         self.speed_history.append(current_speed)
@@ -312,19 +338,27 @@ class Game:
             if bullet.is_off_screen(self.SCREEN_WIDTH, self.SCREEN_HEIGHT):
                 bullets_to_remove.append(bullet)
             else:
+                print(f"Checking bullet collisions for bullet at ({bullet.x}, {bullet.y})")  # Debugging
                 self.check_bullet_collisions(bullet, bullets_to_remove)
+
         for bullet in bullets_to_remove:
             if bullet in self.bullets:
                 self.bullets.remove(bullet)
 
     def check_bullet_collisions(self, bullet, bullets_to_remove):
+        damage = self.character.damage_bonus if hasattr(self.character, 'damage_bonus') else 0  # Ensure damage is initialized
+        print(f"Damage bonus: {damage}")  # Debugging line
+
         for zombie in self.zombies[:]:
             if zombie.check_collision(bullet):
-                zombie.take_damage(25)
+                zombie.take_damage(damage)  # Apply damage to the zombie
                 bullets_to_remove.append(bullet)
+                self.damage_done_in_last_second += damage  # Add damage to the DPS tracker
+                print(f"Zombie hit! Health: {zombie.current_health}, Damage dealt: {damage}")
                 if zombie.is_dead():
                     self.zombies.remove(zombie)
                     self.money_counter.add_money()
+
 
     def update_zombies(self):
         for zombie in self.zombies:
@@ -373,10 +407,10 @@ class Game:
     # -------- Rendering --------
     def render_game(self):
         if self.current_step == "main_menu":
-            print("Rendering Main Menu")
+            # print("Rendering Main Menu")
             self.main_menu.draw(self.screen)
         elif self.current_step == "intro":
-            print("Rendering Intro Step")
+            # print("Rendering Intro Step")
             self.intro_step.draw(self.screen)
         elif self.current_step == "family_selection":
             self.family_selection_step.draw(self.screen)
@@ -413,8 +447,8 @@ class Game:
             # Draw the character's health bar at the bottom of the screen
             self.character.draw_health_bar_bottom(self.screen, self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
-        # Pass player_speed to materials_counter.draw()
-        self.materials_counter.draw(self.screen, 20, 100, self.player_speed)
+        # Add the dps value when calling the draw method
+        self.materials_counter.draw(self.screen, 20, 100, self.player_speed, self.character.fire_rate, self.character.damage_bonus, self.dps, self.sps)
 
         self.shop.draw_shop_button(self.screen)
         if self.shop.is_shop_open():

@@ -34,17 +34,28 @@ class MaterialsCounter:
         weights = [101 - i for i in range(70, 101)]  # Decreasing probability for higher values
         return random.choices(scrap_values, weights)[0]
 
-    def draw(self, surface, x, y, player_speed):
-        """Draw the materials counter and player speed on the screen."""
+    def calculate_dps(self, fire_rate, damage_per_shot):
+        """Calculate the average damage per second (DPS) the player is outputting."""
+        return fire_rate * damage_per_shot
+
+    def draw(self, surface, x, y, player_speed, fire_rate, damage_per_shot, dps, sps):
+        """Draw the materials counter, player speed, DPS, and SPS on the screen."""
         font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 20)
         food_text = font.render(f"Food: {self.food}", True, (0, 0, 0))
         ammo_text = font.render(f"Ammo: {self.ammo}", True, (0, 0, 0))
         scrap_text = font.render(f"Scrap: {self.scrap}", True, (0, 0, 0))
         speed_text = font.render(f"Speed: {player_speed:.1f} m/s", True, (0, 0, 0))
+        dps_text = font.render(f"DPS: {dps:.1f}", True, (0, 0, 0))
+        sps_text = font.render(f"SPS: {sps:.1f}", True, (0, 0, 0))  # Show the shots per second
 
         # Display each material in a column
         surface.blit(food_text, (x, y))
-        surface.blit(ammo_text, (x, y + 30))  # Offset for the next item
-        surface.blit(scrap_text, (x, y + 60))  # Further offset
-        surface.blit(speed_text, (x, y + 90))  # Show speed below scrap counter
+        surface.blit(ammo_text, (x, y + 30))
+        surface.blit(scrap_text, (x, y + 60))
+        surface.blit(speed_text, (x, y + 90))
+        surface.blit(dps_text, (x, y + 120))
+        surface.blit(sps_text, (x, y + 150))  # Display SPS below DPS
+
+
+
 
