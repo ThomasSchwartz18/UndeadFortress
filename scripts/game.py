@@ -189,16 +189,21 @@ class Game:
                 self.handle_game_events(event)
 
     def handle_main_menu_events(self, event):
-        # print("Handling Main Menu events")
-        self.main_menu.handle_events(event)  # This should process menu events
+        """Handle events in the main menu, like button clicks."""
+        self.main_menu.handle_events(event)  # Process events in the main menu
+        
+        # Check if the game has started by clicking "Start"
         if self.main_menu.is_game_started():
             print("Transitioning to Intro")
-            self.current_step = "intro"
+            self.current_step = "intro"  # Transition to the intro phase
 
     def handle_intro_events(self, event):
-        # Check if the "Continue" button in the intro step was clicked
-        if self.intro_step.handle_events(event) == "continue":
-            print("Transitioning to Family Selection")  # Debugging line
+        # Check if the "Continue" button in the intro step was clicked or if the user presses Enter/Space
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            print("Continue button clicked in Intro Step.")  # Debugging line
+            self.current_step = "family_selection"  # Move to the next phase
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            print("Enter key pressed in Intro Step.")  # Debugging line
             self.current_step = "family_selection"
 
     def handle_family_selection_events(self, event):
@@ -315,8 +320,16 @@ class Game:
             
         delta_time = self.clock.get_time() / 1000  # Convert milliseconds to seconds
 
-        # Pass the calculated DPS to materials_counter.draw
-        self.materials_counter.draw(self.screen, 20, 100, self.player_speed, self.character.fire_rate, self.character.damage_bonus, self.dps, self.sps)
+        # Pass the calculated DPS and accuracy_offset to materials_counter.draw
+        self.materials_counter.draw(
+            self.screen, 20, 100, 
+            self.player_speed, 
+            self.character.fire_rate, 
+            self.character.damage_bonus, 
+            self.dps, 
+            self.sps,
+            self.character.accuracy_offset  # Pass accuracy_offset here
+        )
 
         # Update speed history with the current speed
         self.speed_history.append(current_speed)
@@ -345,8 +358,6 @@ class Game:
             if not self.day_counter.timer_start_time:
                 self.day_counter.start_timer()
             self.day_counter.show_next_day_button = True
-
-
 
     def update_bullets(self):
         bullets_to_remove = []
@@ -424,31 +435,32 @@ class Game:
                 self.advance_day_logic()
 
     # -------- Render Game Background --------
-    def draw_tiled_background(self):
-        """Tile the grass image across the screen."""
+    def draw_tiled_background(self, surface):
+        """Tile the grass image across the given surface."""
         tile_width, tile_height = self.grass_image.get_size()
-        for x in range(0, self.SCREEN_WIDTH, tile_width):
-            for y in range(0, self.SCREEN_HEIGHT, tile_height):
-                self.screen.blit(self.grass_image, (x, y))
+        screen_width, screen_height = surface.get_size()
+        
+        for x in range(0, screen_width, tile_width):
+            for y in range(0, screen_height, tile_height):
+                surface.blit(self.grass_image, (x, y))
 
     # -------- Rendering --------
     def render_game(self):
         if self.current_step == "main_menu":
-            # print("Rendering Main Menu")
-            self.main_menu.draw(self.screen)
+            self.main_menu.draw(self.screen, self)  # Pass self as game_instance
         elif self.current_step == "intro":
-            # print("Rendering Intro Step")
-            self.intro_step.draw(self.screen)
+            self.intro_step.draw(self.screen, self)  # Ensure intro_step takes game_instance too if needed
         elif self.current_step == "family_selection":
-            self.family_selection_step.draw(self.screen)
+            self.family_selection_step.draw(self.screen, self)  # Pass self as game_instance here
         elif self.current_step == "team_selection":
-            self.team_selection_step.draw(self.screen)
+            self.team_selection_step.draw(self.screen, self)  # Pass self as game_instance here
         elif self.current_step == "game":
             self.render_gameplay()
 
+            
     def render_gameplay(self):
         # First, draw the tiled background
-        self.draw_tiled_background()
+        self.draw_tiled_background(self.screen)  # Pass self.screen as the argument
 
         # Then, draw all game elements (house, character, etc.)
         self.house.draw(self.screen, self.zoom_level, self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
@@ -465,7 +477,7 @@ class Game:
 
         self.day_counter.draw(self.screen)
         self.money_counter.draw(self.screen, 20, 60)
-        
+
         # Check if the character is inside the house
         if self.character.in_house:
             # Draw the house's health bar at the bottom of the screen
@@ -474,13 +486,21 @@ class Game:
             # Draw the character's health bar at the bottom of the screen
             self.character.draw_health_bar_bottom(self.screen, self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
-        # Add the dps value when calling the draw method
-        self.materials_counter.draw(self.screen, 20, 100, self.player_speed, self.character.fire_rate, self.character.damage_bonus, self.dps, self.sps)
+        # Add the DPS value when calling the draw method, along with accuracy_offset
+        self.materials_counter.draw(
+            self.screen, 20, 100, 
+            self.player_speed, 
+            self.character.fire_rate, 
+            self.character.damage_bonus, 
+            self.dps, 
+            self.sps, 
+            self.character.accuracy_offset  # Add accuracy_offset here
+        )
 
         self.shop.draw_shop_button(self.screen)
         if self.shop.is_shop_open():
             self.shop.open_shop_menu(self.screen)
-        
+
         # Add the settings logo here so it's drawn after everything else
         self.settings.draw_logo()
 
@@ -488,7 +508,7 @@ class Game:
         self.draw_house_interaction_message()
 
         self.stat_window.draw()  # Draw the stats window if it's visible
-        
+
         # Check if the settings window should be drawn
         if self.settings.show_settings_window:
             self.settings.draw_settings_window()
@@ -496,30 +516,86 @@ class Game:
         # Update display
         pygame.display.flip()
 
+
+
     def draw_house_interaction_message(self):
-        """Display a message when the player is inside or near the house."""
+        """Display a message when the player is inside or near the house for the first 4 seconds, then fade out."""
         # Do not show indicators if the shop is open
         if self.shop.is_shop_open():
             return  # Skip drawing the indicator if the shop is open
 
-        # Use PixelifySans-Regular.ttf for the font
-        font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 36)
+        current_time = pygame.time.get_ticks() / 1000.0  # Current time in seconds
 
-        house_center_x = self.SCREEN_WIDTH // 2
-        house_center_y = self.SCREEN_HEIGHT // 2
-        distance_to_house = ((self.character.x - house_center_x) ** 2 + (self.character.y - house_center_y) ** 2) ** 0.5
-
+        # If the player is inside the house
         if self.character.in_house:
-            message = "Press E to exit house"
-        elif distance_to_house < 50:  # Define an arbitrary threshold for "near" the house
-            message = "Press E to enter house"
-        else:
-            return  # No message if not near or in the house
+            time_in_house = current_time - self.character.house_entry_time  # Time spent in the house
 
-        # Render the message on the screen
-        text_surface = font.render(message, True, (0, 0, 0))  # Black text
-        text_rect = text_surface.get_rect(center=(self.SCREEN_WIDTH // 2, self.SCREEN_HEIGHT // 2 + 100))  # Position it below the house
-        self.screen.blit(text_surface, text_rect)
+            # Only show the message for the first 4 seconds inside the house
+            if time_in_house > 4:
+                return  # Stop showing the message after 4 seconds
+
+            message = "Press E to exit house"
+        else:
+            # If the player is near the house but not inside
+            house_center_x = self.SCREEN_WIDTH // 2
+            house_center_y = self.SCREEN_HEIGHT // 2
+            distance_to_house = ((self.character.x - house_center_x) ** 2 + (self.character.y - house_center_y) ** 2) ** 0.5
+
+            if distance_to_house < 50:  # Define an arbitrary threshold for "near" the house
+                # If the player is near the house, track time since they became near
+                if not hasattr(self.character, 'near_house_time') or self.character.near_house_time is None:
+                    self.character.near_house_time = current_time  # Start the timer when the player is near the house
+
+                time_near_house = current_time - self.character.near_house_time  # Time spent near the house
+
+                # Show the message for 4 seconds after the player is near the house
+                if time_near_house > 4:
+                    return  # Stop showing the message after 4 seconds
+
+                message = "Press E to enter house"
+            else:
+                # If the player is not near the house, reset the timer
+                self.character.near_house_time = None
+                return  # No message if not near or in the house
+
+        # Font settings for the message
+        regular_font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 36)
+        e_font = pygame.font.Font('assets/pixelify_font/Monofett-Regular.ttf', 36)
+
+        # Split the message to render "E" separately
+        parts = message.split("E")
+        text_surface_before_e = regular_font.render(parts[0], True, (255, 255, 255))
+        text_surface_after_e = regular_font.render(parts[1], True, (255, 255, 255)) if len(parts) > 1 else None
+        e_surface = e_font.render("E", True, (255, 255, 255))
+
+        before_e_width = text_surface_before_e.get_width()
+        e_width = e_surface.get_width()
+        after_e_width = text_surface_after_e.get_width() if text_surface_after_e else 0
+
+        total_width = before_e_width + e_width + after_e_width
+        base_x = self.SCREEN_WIDTH // 2 - total_width // 2
+        base_y = self.SCREEN_HEIGHT // 2 + 100
+
+        # Determine fade out effect for the last 2 seconds
+        if self.character.in_house:
+            alpha = 255 if time_in_house <= 2 else max(0, 255 - int(255 * (time_in_house - 2) / 2))
+        else:
+            alpha = 255 if time_near_house <= 2 else max(0, 255 - int(255 * (time_near_house - 2) / 2))
+
+        # Apply alpha transparency to surfaces
+        text_surface_before_e.set_alpha(alpha)
+        e_surface.set_alpha(alpha)
+        if text_surface_after_e:
+            text_surface_after_e.set_alpha(alpha)
+
+        # Draw the message parts on the screen
+        self.screen.blit(text_surface_before_e, (base_x, base_y))
+        self.screen.blit(e_surface, (base_x + before_e_width, base_y))
+        if text_surface_after_e:
+            self.screen.blit(text_surface_after_e, (base_x + before_e_width + e_width, base_y))
+
+        pygame.display.flip()  # Update the screen
+
 
 
     # -------- Helper Functions --------

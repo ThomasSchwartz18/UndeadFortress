@@ -16,5 +16,5 @@ class MoneyCounter:
 
     def draw(self, surface, x, y):
         """Draw the money counter on the screen at the specified position."""
-        money_text = self.font.render(f"Money: ${self.money}", True, (0, 0, 0))
+        money_text = self.font.render(f"Money: ${self.money}", True, (255, 255, 255))
         surface.blit(money_text, (x, y))

@@ -17,21 +17,35 @@ class IntroStep:
         self.continue_text = self.continue_button_font.render("Continue", True, (0, 0, 0))
         self.continue_rect = self.continue_text.get_rect(center=(screen_width // 2, screen_height // 2 + 150))
 
-    def draw(self, surface):
-        """Draw the intro story and continue button."""
-        surface.fill((255, 255, 255))  # Clear the screen
+        self.screen_width = screen_width
+        self.screen_height = screen_height
 
-        # Draw the story text
+
+    def draw(self, surface, game_instance):
+        """Draw the intro screen with a tiled background."""
+        # Draw the tiled background
+        game_instance.draw_tiled_background(surface)
+
+        # Draw the intro text
+        story_text = [
+            "In a post-zombie-infested world, you are part of a hired",
+            "security team. Your job is to protect a wealthy family",
+            "from the remaining zombie threat."
+        ]
+        
         y_offset = 100
-        for line in self.story_text:
-            text_surface = self.font.render(line, True, (0, 0, 0))
-            text_rect = text_surface.get_rect(center=(surface.get_width() // 2, y_offset))
+        for line in story_text:
+            text_surface = self.font.render(line, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(center=(self.screen_width // 2, y_offset))
             surface.blit(text_surface, text_rect)
             y_offset += 40
 
         # Draw the continue button
-        surface.blit(self.continue_text, self.continue_rect)
-        pygame.display.flip()
+        continue_surface = self.font.render("Continue", True, (255, 255, 255))
+        continue_rect = continue_surface.get_rect(center=(self.screen_width // 2, self.screen_height - 100))
+        surface.blit(continue_surface, continue_rect)
+
+        pygame.display.flip()  # Update the screen
 
     def handle_events(self, event):
         """Handle click on the continue button."""
@@ -55,16 +69,19 @@ class FamilySelectionStep:
 
         # Create family buttons
         for index, family in enumerate(self.families):
-            button_text = self.button_font.render(family, True, (0, 0, 0))
+            button_text = self.button_font.render(family, True, (255, 255, 255))
             button_rect = button_text.get_rect(center=(screen_width // 2, screen_height // 2 + index * 60))
             self.family_buttons.append((button_text, button_rect))
 
-    def draw(self, surface):
+    def draw(self, surface, game_instance):
         """Draw the family selection buttons."""
         surface.fill((255, 255, 255))
+        
+        # Draw the tiled background
+        game_instance.draw_tiled_background(surface)  # Pass the surface to draw the background
 
         # Draw the family selection text
-        header = self.font.render("Select the family you are protecting:", True, (0, 0, 0))
+        header = self.font.render("Select the family you are protecting:", True, (255, 255, 255))
         header_rect = header.get_rect(center=(surface.get_width() // 2, surface.get_height() // 4))
         surface.blit(header, header_rect)
 
@@ -108,25 +125,26 @@ class TeamSelectionStep:
 
         # Create role buttons
         for index, role in enumerate(self.roles):
-            button_text = self.button_font.render(role, True, (0, 0, 0))
+            button_text = self.button_font.render(role, True, (255, 255, 255))
             button_rect = button_text.get_rect(center=(screen_width // 2, screen_height // 2 + index * 60))
             self.role_buttons.append((role, button_text, button_rect))
 
         # Counter text
-        self.counter_text = self.font.render("0/2 selected", True, (0, 0, 0))
+        self.counter_text = self.font.render("0/2 selected", True, (255, 255, 255))
         self.counter_rect = self.counter_text.get_rect(center=(screen_width // 2, screen_height // 4 - 50))
 
         # Continue button (initially hidden)
-        self.continue_text = self.button_font.render("Continue", True, (0, 0, 0))
+        self.continue_text = self.button_font.render("Continue", True, (255, 255, 255))
         self.continue_rect = self.continue_text.get_rect(center=(screen_width // 2, screen_height - 100))
         self.show_continue_button = False
 
-    def draw(self, surface):
+    def draw(self, surface, game_instance):
         """Draw the team role selection buttons and counter."""
-        surface.fill((255, 255, 255))
+        # Draw the tiled background
+        game_instance.draw_tiled_background(surface)  # Pass the surface to draw the background
 
         # Draw the team selection text
-        header = self.font.render("Select your security team members:", True, (0, 0, 0))
+        header = self.font.render("Select your security team members:", True, (255, 255, 255))
         header_rect = header.get_rect(center=(surface.get_width() // 2, surface.get_height() // 4))
         surface.blit(header, header_rect)
 
@@ -135,7 +153,7 @@ class TeamSelectionStep:
             surface.blit(button_text, button_rect)
 
         # Draw the counter
-        self.counter_text = self.font.render(f"{len(self.selected_roles)}/2 selected", True, (0, 0, 0))
+        self.counter_text = self.font.render(f"{len(self.selected_roles)}/2 selected", True, (255, 255, 255))
         surface.blit(self.counter_text, self.counter_rect)
 
         # Draw the continue button if 2 selections are made

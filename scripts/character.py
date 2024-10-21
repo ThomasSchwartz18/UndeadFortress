@@ -24,7 +24,7 @@ class Character:
         self.player_stats = player_stats or {}
 
         # Check if Machine Gunner is in the selected roles and apply fire rate bonus
-        self.fire_rate_bonus = 1.0 if selected_roles and "Machine Gunner" in selected_roles else 0.0
+        self.fire_rate_bonus = 2 if selected_roles and "Machine Gunner" in selected_roles else 0.0
 
         # Apply fire rate bonus and recalculate shooting interval
         self.shooting_interval = 1 / (self.fire_rate + self.fire_rate_bonus)
@@ -37,6 +37,14 @@ class Character:
         self.accuracy_bonus = 0.0  # Accuracy bonus for snipers
         self.health_regen_rate = 0  # Health regeneration rate for medics
         self.accuracy_offset = accuracy  # Lower value = more accurate, higher value = less accurate
+
+        if selected_roles and "Sniper" in selected_roles:
+            self.accuracy_offset = 5  # Accuracy bonus from the Sniper
+            
+        self.in_house = True  # Start the player inside the house and invisible
+        self.is_visible = False  # Player is invisible when inside the house
+        self.house_entry_time = pygame.time.get_ticks() / 1000.0  # Time when the player enters the house
+        self.near_house_time = None  # Track the time when the player gets near the house
 
         print(f"Character initialized with fire rate: {self.fire_rate}, fire rate bonus: {self.fire_rate_bonus}, shooting interval: {self.shooting_interval}")
 
@@ -91,6 +99,10 @@ class Character:
         """Toggle the player's status between inside and outside the house."""
         self.in_house = not self.in_house
         self.is_visible = not self.in_house  # Player is visible when outside the house
+
+        if self.in_house:
+            # Set the entry time when the player enters the house
+            self.house_entry_time = pygame.time.get_ticks() / 1000.0
 
     def take_damage(self, damage):
         """Reduce the character's health."""

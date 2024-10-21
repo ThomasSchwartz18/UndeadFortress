@@ -38,23 +38,31 @@ class MaterialsCounter:
         """Calculate the average damage per second (DPS) the player is outputting."""
         return fire_rate * damage_per_shot
 
-    def draw(self, surface, x, y, player_speed, fire_rate, damage_per_shot, dps, sps):
-        """Draw the materials counter, player speed, DPS, and SPS on the screen."""
-        font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 20)
-        food_text = font.render(f"Food: {self.food}", True, (0, 0, 0))
-        ammo_text = font.render(f"Ammo: {self.ammo}", True, (0, 0, 0))
-        scrap_text = font.render(f"Scrap: {self.scrap}", True, (0, 0, 0))
-        speed_text = font.render(f"Speed: {player_speed:.1f} m/s", True, (0, 0, 0))
-        dps_text = font.render(f"DPS: {dps:.1f}", True, (0, 0, 0))
-        sps_text = font.render(f"SPS: {sps:.1f}", True, (0, 0, 0))  # Show the shots per second
+    def draw(self, surface, x, y, speed, fire_rate, damage, dps, sps, accuracy_offset):
+        """Draw the materials, SPS, and accuracy range on the screen."""
+        font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 24)
+        
+        # Draw Speed, Fire Rate, Damage, DPS, SPS
+        speed_text = font.render(f"Speed: {speed:.2f}", True, (255, 255, 255))
+        fire_rate_text = font.render(f"Fire Rate: {fire_rate:.2f}", True, (255, 255, 255))
+        damage_text = font.render(f"Damage: {damage}", True, (255, 255, 255))
+        dps_text = font.render(f"DPS: {dps}", True, (255, 255, 255))
+        sps_text = font.render(f"SPS: {sps}", True, (255, 255, 255))
+        
+        # Calculate the accuracy range (e.g., ±accuracy_offset)
+        accuracy_range = f"Accuracy Range: ±{accuracy_offset:.2f}"
 
-        # Display each material in a column
-        surface.blit(food_text, (x, y))
-        surface.blit(ammo_text, (x, y + 30))
-        surface.blit(scrap_text, (x, y + 60))
-        surface.blit(speed_text, (x, y + 90))
-        surface.blit(dps_text, (x, y + 120))
-        surface.blit(sps_text, (x, y + 150))  # Display SPS below DPS
+        # Render all text onto the screen
+        surface.blit(speed_text, (x, y))
+        surface.blit(fire_rate_text, (x, y + 30))
+        surface.blit(damage_text, (x, y + 60))
+        surface.blit(dps_text, (x, y + 90))
+        surface.blit(sps_text, (x, y + 120))
+
+        # Display the accuracy range below the SPS value
+        accuracy_text = font.render(accuracy_range, True, (255, 255, 255))
+        surface.blit(accuracy_text, (x, y + 150))
+
 
 
 
