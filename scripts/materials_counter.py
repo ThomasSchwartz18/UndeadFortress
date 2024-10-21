@@ -42,6 +42,16 @@ class MaterialsCounter:
         """Draw the materials, SPS, and accuracy range on the screen."""
         font = pygame.font.Font('assets/pixelify_font/PixelifySans-Regular.ttf', 24)
         
+        # Draw materials (food, ammo, scrap) below the accuracy information
+        food_text = font.render(f"Food: {self.food}", True, (255, 255, 255))
+        ammo_text = font.render(f"Ammo: {self.ammo}", True, (255, 255, 255))
+        scrap_text = font.render(f"Scrap: {self.scrap}", True, (255, 255, 255))
+
+        # Display materials on the screen
+        surface.blit(food_text, (x, y + 180))
+        surface.blit(ammo_text, (x, y + 210))
+        surface.blit(scrap_text, (x, y + 240))
+            
         # Draw Speed, Fire Rate, Damage, DPS, SPS
         speed_text = font.render(f"Speed: {speed:.2f}", True, (255, 255, 255))
         fire_rate_text = font.render(f"Fire Rate: {fire_rate:.2f}", True, (255, 255, 255))
