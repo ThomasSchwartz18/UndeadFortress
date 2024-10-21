@@ -269,9 +269,14 @@ class Game:
 
         if current_speed < 0.1:  # If the player speed is very low, consider it as not moving
             current_speed = 0.0
+            
+        delta_time = self.clock.get_time() / 1000  # Convert milliseconds to seconds
 
         # Update speed history with the current speed
         self.speed_history.append(current_speed)
+        # Regenerate health for character and house
+        self.character.regenerate_health(delta_time)
+        self.house.regenerate_health(delta_time)
 
         # Keep the speed history size limited
         if len(self.speed_history) > self.speed_history_size:
